@@ -26,7 +26,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QTextEdit" name="textContainer"/>
+         <widget class="CQTextEdit" name="textContainer"/>
         </item>
        </layout>
       </widget>
@@ -73,6 +73,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CQTextEdit</class>
+   <extends>QTextEdit</extends>
+   <header>cqtextedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

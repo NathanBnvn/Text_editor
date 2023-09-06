@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "cqtextedit.h"
+
 #include <QFile>
 #include <QFileDialog>
 #include <QTabBar>
@@ -21,17 +23,26 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tabWidget->removeTab(1);
     ui->tabWidget->setTabsClosable(true);
 
-    // QTextEdit* edit = qobject_cast<QTextEdit*>(tabWidget->widget(index))
-
-    textContainer = ui->tabWidget->currentWidget()->findChild<QTextEdit *>();
+    // QTextEdit* edit = qobject_cast<QTextEdit*>(tabWidget->widget(index));
 
     connect (ui->actionOpenFile, SIGNAL(triggered(bool)), this, SLOT(selectFile()));
     connect (ui->tabWidget->tabBar(), SIGNAL(currentChanged(int)), this, SLOT(tabChanged(int)));
     connect (ui->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
-    connect (textContainer, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
+    connect (ui->tabWidget->currentWidget()->findChild<QTextEdit *>(), SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
+    //connect (textContainer, SIGNAL(textHasChanged(bool)), this, SLOT(test(bool)));
+    //connect (textContainer, SIGNAL(cursorPositionChanged()), this, SLOT(test2()));
 
+    ui->labelCursor->setText(QString(
+        "Ligne: " + QString::number(textContainer->cursor_row) +
+        ", Colonne: " + QString::number(textContainer->cursor_column)));
 }
 
+// -----------------------------------------------------------------------------------------
+
+//non l'algorithme c'est : chaque fois que le QtextEdit est changé quant au contenu on doit vérifier
+//si le contenu est égal à celui qui a été mis initialement
+//s'il est égal on envoi un signal au tab pour lui dire c'est égal sinon un signal pour lui dire ce n'est pas égal
+//comme tu feras des connect entre les textedit et les tab tu ne peux pas avoir de probleme
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -51,11 +62,26 @@ void MainWindow::selectFile()
         MainWindow::textContainer = ui->textContainer;
         ui->tabWidget->setTabText(0, fileName);
     } else {
-        MainWindow::textContainer = new QTextEdit();
+        MainWindow::textContainer = new CQTextEdit();
         ui->tabWidget->addTab(textContainer, fileName);
     }
 
     readFile();
+}
+
+
+void MainWindow::readFile()
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return;
+
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        QString line = in.readLine();
+        textContainer->append(line);
+    }
+    textContainer->initialContent = textContainer->toPlainText();
 }
 
 
@@ -100,7 +126,8 @@ void MainWindow::closeTab(int id)
 
 bool MainWindow::hasBeenEdited(int id)
 {
-    if(initialContent.isEmpty())
+    initialContents[id] = textContainer->initialContent;
+    if(textContainer->initialContent.isEmpty())
         return false;
 
     if(textContainer->toPlainText().isEmpty())
@@ -122,22 +149,6 @@ bool MainWindow::hasBeenEdited(int id)
 }
 
 
-void MainWindow::readFile()
-{
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        return;
-
-
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        textContainer->append(line);
-    }
-    initialContent = textContainer->toPlainText();
-}
-
-
 QString MainWindow::pathToNameFile()
 {
     if(filePath.isEmpty())
@@ -148,17 +159,34 @@ QString MainWindow::pathToNameFile()
 }
 
 void MainWindow::tabChanged(int id){
-    initialContents[id] = initialContent;
     hasBeenEdited(id);
+}
+
+void MainWindow::test(bool b){
+    if(b){
+        qDebug() << 200;
+    }else{
+        qDebug() << 2400;
+    }
 }
 
 // Etape 3
 
+void MainWindow::test2()
+{
+    ui->labelCursor->setText(QString(
+        "Ligne: " + QString::number(textContainer->cursor_row) +
+        ", Colonne: " + QString::number(textContainer->cursor_column)));
+}
+
 void MainWindow::cursorChanged()
 {
-    int column = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().blockNumber();
-    int row = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().positionInBlock();
-    ui->labelCursor->setText(QString(
-        "Ligne: " + QString::number(row) +
-        ", Colonne: " + QString::number(column)));
+    //int column = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().blockNumber();
+    //int row = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().positionInBlock();
+    //ui->labelCursor->setText(QString(
+    //    "Ligne: " + QString::number(row) +
+    //    ", Colonne: " + QString::number(column)));
 }
+
+//
+// QFileDialog::history() Returns the browsing history of the filedialog as a list of paths.
