@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <iostream>
 
+using namespace std;
 namespace fs = std::filesystem;
 
 MainWindow::MainWindow(QWidget *parent)
@@ -20,9 +21,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tabWidget->removeTab(1);
     ui->tabWidget->setTabsClosable(true);
 
+    // QTextEdit* edit = qobject_cast<QTextEdit*>(tabWidget->widget(index))
+
+    textContainer = ui->tabWidget->currentWidget()->findChild<QTextEdit *>();
+
     connect (ui->actionOpenFile, SIGNAL(triggered(bool)), this, SLOT(selectFile()));
     connect (ui->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
-    connect (ui->textContainer->document(), SIGNAL(contentsChanged()), this, SLOT(hasBeenEdited()));
+    connect (textContainer->document(), SIGNAL(contentsChanged()), this, SLOT(hasBeenEdited()));
+    connect (textContainer, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
 }
 
 MainWindow::~MainWindow()
@@ -37,11 +43,11 @@ void MainWindow::selectFile()
                                                 "/home",
                                                 tr("Document (*.txt *.doc *.rtf *odt)"));
 
-    MainWindow::fileName = MainWindow::pathToNameFile();
+    MainWindow::fileName = pathToNameFile();
 
     if(ui->textContainer->document()->isEmpty())
     {
-        MainWindow::textContainer = QObject::findChild<QTextEdit*>("textContainer");
+        MainWindow::textContainer = ui->textContainer;
         ui->tabWidget->setTabText(0, fileName);
     } else {
         MainWindow::textContainer = new QTextEdit();
@@ -49,6 +55,7 @@ void MainWindow::selectFile()
     }
 
     readFile();
+    initialContents[ui->tabWidget->currentIndex()] = initialContent;
 }
 
 
@@ -66,9 +73,8 @@ void MainWindow::closeTab(int id)
 
     if(hasBeenEdited()){
         int choice = messageBox.exec();
-        qDebug() << choice;
 
-        QByteArray content = QString(textContainer->toPlainText()).toUtf8();
+        QByteArray content = textContainer->toPlainText().toUtf8();
 
         switch (choice) {
         case QMessageBox::Save:
@@ -91,12 +97,29 @@ void MainWindow::closeTab(int id)
     }
 }
 
-// QFileDialog::history() Returns the browsing history of the filedialog as a list of paths.
 
 bool MainWindow::hasBeenEdited()
 {
-    //ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), fileName +" *");
-    return true;
+    if(initialContent.isEmpty())
+        return false;
+
+    if(textContainer->toPlainText().isEmpty())
+        return false;
+
+    qDebug() << initialContent;
+    qDebug() << ui->tabWidget->currentIndex();
+
+    if(initialContents[ui->tabWidget->currentIndex()] == textContainer->toPlainText()){
+        ui->tabWidget->setTabText(ui->tabWidget->currentIndex(),
+                                  ui->tabWidget->tabText(ui->tabWidget->currentIndex()));
+        qDebug() << ui->tabWidget->currentIndex();
+        return false;
+    } else {
+        if(!ui->tabWidget->tabText(ui->tabWidget->currentIndex()).contains(" *"))
+        ui->tabWidget->setTabText(ui->tabWidget->currentIndex(),
+                                  ui->tabWidget->tabText(ui->tabWidget->currentIndex()) +" *");
+        return true;
+    }
 }
 
 
@@ -106,12 +129,15 @@ void MainWindow::readFile()
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return;
 
+
     QTextStream in(&file);
     while (!in.atEnd()) {
         QString line = in.readLine();
         textContainer->append(line);
     }
+    initialContent = textContainer->toPlainText();
 }
+
 
 QString MainWindow::pathToNameFile()
 {
@@ -123,3 +149,13 @@ QString MainWindow::pathToNameFile()
 }
 
 
+// Etape 3
+
+void MainWindow::cursorChanged()
+{
+    int column = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().blockNumber();
+    int row = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().positionInBlock();
+    ui->labelCursor->setText(QString(
+        "Ligne: " + QString::number(row) +
+        ", Colonne: " + QString::number(column)));
+}
