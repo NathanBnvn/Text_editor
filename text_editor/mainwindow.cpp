@@ -26,9 +26,10 @@ MainWindow::MainWindow(QWidget *parent)
     textContainer = ui->tabWidget->currentWidget()->findChild<QTextEdit *>();
 
     connect (ui->actionOpenFile, SIGNAL(triggered(bool)), this, SLOT(selectFile()));
+    connect (ui->tabWidget->tabBar(), SIGNAL(currentChanged(int)), this, SLOT(tabChanged(int)));
     connect (ui->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
-    connect (textContainer->document(), SIGNAL(contentsChanged()), this, SLOT(hasBeenEdited()));
     connect (textContainer, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
+
 }
 
 MainWindow::~MainWindow()
@@ -55,7 +56,6 @@ void MainWindow::selectFile()
     }
 
     readFile();
-    initialContents[ui->tabWidget->currentIndex()] = initialContent;
 }
 
 
@@ -71,7 +71,7 @@ void MainWindow::closeTab(int id)
     messageBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     messageBox.setDefaultButton(QMessageBox::Save);
 
-    if(hasBeenEdited()){
+    if(hasBeenEdited(id)){
         int choice = messageBox.exec();
 
         QByteArray content = textContainer->toPlainText().toUtf8();
@@ -98,7 +98,7 @@ void MainWindow::closeTab(int id)
 }
 
 
-bool MainWindow::hasBeenEdited()
+bool MainWindow::hasBeenEdited(int id)
 {
     if(initialContent.isEmpty())
         return false;
@@ -106,18 +106,17 @@ bool MainWindow::hasBeenEdited()
     if(textContainer->toPlainText().isEmpty())
         return false;
 
-    qDebug() << initialContent;
-    qDebug() << ui->tabWidget->currentIndex();
+    qDebug() << initialContents[id] << "-" << textContainer->toPlainText();
 
-    if(initialContents[ui->tabWidget->currentIndex()] == textContainer->toPlainText()){
-        ui->tabWidget->setTabText(ui->tabWidget->currentIndex(),
-                                  ui->tabWidget->tabText(ui->tabWidget->currentIndex()));
-        qDebug() << ui->tabWidget->currentIndex();
+    while(true)
+    if(initialContents[id] == textContainer->toPlainText()){
+        ui->tabWidget->setTabText(id, ui->tabWidget->tabText(id));
         return false;
     } else {
-        if(!ui->tabWidget->tabText(ui->tabWidget->currentIndex()).contains(" *"))
-        ui->tabWidget->setTabText(ui->tabWidget->currentIndex(),
-                                  ui->tabWidget->tabText(ui->tabWidget->currentIndex()) +" *");
+        if(!ui->tabWidget->tabText(id).contains(" *"))
+        ui->tabWidget->setTabText(id,
+                                  ui->tabWidget->tabText(id) +" *");
+
         return true;
     }
 }
@@ -148,6 +147,10 @@ QString MainWindow::pathToNameFile()
         fs::path(filePath.toStdString()).filename().generic_string());
 }
 
+void MainWindow::tabChanged(int id){
+    initialContents[id] = initialContent;
+    hasBeenEdited(id);
+}
 
 // Etape 3
 

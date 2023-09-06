@@ -26,6 +26,7 @@ public:
     std::map<int, QString> initialContents;
 
     void readFile();
+    bool hasBeenEdited(int id);
     QString pathToNameFile();
 
 private:
@@ -34,7 +35,7 @@ private:
 private slots:
     void selectFile();
     void closeTab(int id);
-    bool hasBeenEdited();
     void cursorChanged();
+    void tabChanged(int id);
 };
 #endif // MAINWINDOW_H
