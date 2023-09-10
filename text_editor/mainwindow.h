@@ -1,9 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "cqtextedit.h"
+
 #include <QMainWindow>
 #include <QString>
-#include <QTextEdit>
 #include <map>
 #include <iostream>
 
@@ -19,15 +20,15 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    QTextEdit * textContainer;
+    CQTextEdit * textContainer;
     QString filePath;
     QString fileName;
-    QString initialContent;
+    QLabel * labelCursor;
     std::map<int, QString> initialContents;
 
     void readFile();
-    bool hasBeenEdited(int id);
     QString pathToNameFile();
+
 
 private:
     Ui::MainWindow *ui;
@@ -37,5 +38,6 @@ private slots:
     void closeTab(int id);
     void cursorChanged();
     void tabChanged(int id);
+    void hasBeenEdited(bool b);
 };
 #endif // MAINWINDOW_H

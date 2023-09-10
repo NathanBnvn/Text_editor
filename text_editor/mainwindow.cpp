@@ -26,15 +26,9 @@ MainWindow::MainWindow(QWidget *parent)
     // QTextEdit* edit = qobject_cast<QTextEdit*>(tabWidget->widget(index));
 
     connect (ui->actionOpenFile, SIGNAL(triggered(bool)), this, SLOT(selectFile()));
-    connect (ui->tabWidget->tabBar(), SIGNAL(currentChanged(int)), this, SLOT(tabChanged(int)));
+    connect (ui->tabWidget->tabBar(), SIGNAL(tabBarClicked(int)), this, SLOT(tabChanged(int)));
     connect (ui->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
-    connect (ui->tabWidget->currentWidget()->findChild<QTextEdit *>(), SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
-    //connect (textContainer, SIGNAL(textHasChanged(bool)), this, SLOT(test(bool)));
-    //connect (textContainer, SIGNAL(cursorPositionChanged()), this, SLOT(test2()));
 
-    ui->labelCursor->setText(QString(
-        "Ligne: " + QString::number(textContainer->cursor_row) +
-        ", Colonne: " + QString::number(textContainer->cursor_column)));
 }
 
 // -----------------------------------------------------------------------------------------
@@ -48,27 +42,25 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
 void MainWindow::selectFile()
 {
     MainWindow::filePath = QFileDialog::getOpenFileName(this, tr("Open File"),
                                                 "/home",
                                                 tr("Document (*.txt *.doc *.rtf *odt)"));
 
-    MainWindow::fileName = pathToNameFile();
+    fileName = pathToNameFile();
 
     if(ui->textContainer->document()->isEmpty())
     {
-        MainWindow::textContainer = ui->textContainer;
+        textContainer = ui->textContainer;
         ui->tabWidget->setTabText(0, fileName);
     } else {
-        MainWindow::textContainer = new CQTextEdit();
+        textContainer = new CQTextEdit();
         ui->tabWidget->addTab(textContainer, fileName);
     }
 
     readFile();
 }
-
 
 void MainWindow::readFile()
 {
@@ -82,14 +74,14 @@ void MainWindow::readFile()
         textContainer->append(line);
     }
     textContainer->initialContent = textContainer->toPlainText();
+
+    connect (ui->textContainer, SIGNAL(textHasChanged(bool)), this, SLOT(hasBeenEdited(bool)));
+    connect (ui->textContainer, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
 }
 
 
 void MainWindow::closeTab(int id)
 {
-    if(ui->textContainer->document()->isEmpty())
-        return;
-
     QMessageBox messageBox(this);
     messageBox.setWindowTitle(QString("Textus Editor - Save file"));
     messageBox.setText(QString("Document modifié"));
@@ -97,7 +89,9 @@ void MainWindow::closeTab(int id)
     messageBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     messageBox.setDefaultButton(QMessageBox::Save);
 
-    if(hasBeenEdited(id)){
+    qDebug() << textContainer->textChanged;
+
+    if(textContainer->textChanged){
         int choice = messageBox.exec();
 
         QByteArray content = textContainer->toPlainText().toUtf8();
@@ -105,8 +99,7 @@ void MainWindow::closeTab(int id)
         switch (choice) {
         case QMessageBox::Save:
             QFileDialog::saveFileContent(content,
-                                         ui->tabWidget->tabText(
-                                             ui->tabWidget->currentIndex()));
+                                         ui->tabWidget->tabText(id));
             ui->tabWidget->removeTab(id);
             break;
         case QMessageBox::Discard:
@@ -118,33 +111,29 @@ void MainWindow::closeTab(int id)
             break;
         }
 
-    }else {
+    } else {
         ui->tabWidget->removeTab(id);
     }
 }
 
 
-bool MainWindow::hasBeenEdited(int id)
+void MainWindow::hasBeenEdited(bool edited)
 {
-    initialContents[id] = textContainer->initialContent;
-    if(textContainer->initialContent.isEmpty())
-        return false;
+    if(this->textContainer->initialContent.isEmpty())
+        return;
 
-    if(textContainer->toPlainText().isEmpty())
-        return false;
+    if(this->textContainer->toPlainText().isEmpty())
+        return;
 
-    qDebug() << initialContents[id] << "-" << textContainer->toPlainText();
-
-    while(true)
-    if(initialContents[id] == textContainer->toPlainText()){
-        ui->tabWidget->setTabText(id, ui->tabWidget->tabText(id));
-        return false;
+    if(edited){
+        if(!ui->tabWidget->tabText(ui->tabWidget->currentIndex()).contains(" *"))
+            ui->tabWidget->setTabText(ui->tabWidget->currentIndex(),
+                                      ui->tabWidget->tabText(ui->tabWidget->currentIndex()) +" *");
+        textContainer->textChanged = true;
     } else {
-        if(!ui->tabWidget->tabText(id).contains(" *"))
-        ui->tabWidget->setTabText(id,
-                                  ui->tabWidget->tabText(id) +" *");
-
-        return true;
+        QString x = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).remove(" *");
+        ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), x);
+        textContainer->textChanged = false;
     }
 }
 
@@ -158,35 +147,55 @@ QString MainWindow::pathToNameFile()
         fs::path(filePath.toStdString()).filename().generic_string());
 }
 
-void MainWindow::tabChanged(int id){
-    hasBeenEdited(id);
-}
-
-void MainWindow::test(bool b){
-    if(b){
-        qDebug() << 200;
-    }else{
-        qDebug() << 2400;
-    }
-}
-
-// Etape 3
-
-void MainWindow::test2()
-{
-    ui->labelCursor->setText(QString(
-        "Ligne: " + QString::number(textContainer->cursor_row) +
-        ", Colonne: " + QString::number(textContainer->cursor_column)));
-}
-
 void MainWindow::cursorChanged()
 {
-    //int column = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().blockNumber();
-    //int row = ui->tabWidget->currentWidget()->findChild<QTextEdit *>()->textCursor().positionInBlock();
-    //ui->labelCursor->setText(QString(
-    //    "Ligne: " + QString::number(row) +
-    //    ", Colonne: " + QString::number(column)));
+    ui->labelCursor->setText(QString("Ligne: " + QString::number(textContainer->cursorRow) +
+                                     ", Colonne: " + QString::number(textContainer->cursorColumn)));
+
 }
 
-//
-// QFileDialog::history() Returns the browsing history of the filedialog as a list of paths.
+void MainWindow::tabChanged(int id){
+    if(id > 0){
+        connect (ui->tabWidget->widget(id), SIGNAL(textHasChanged(bool)), this, SLOT(hasBeenEdited(bool)));
+        connect (ui->tabWidget->widget(id), SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
+    }
+
+}
+
+
+
+//TP Editeur de texte
+
+// **** Lecture de fichiers texte ****
+// L’éditeur sera capable de lire plusieurs fichiers texte et de les afficher dans des onglets.
+// Les onglets pourront être supprimés en appuyant sur une croix de fermeture
+// Classses Qt utiles : QFile, QFileDialog, QTabBar, QTextDocument
+
+
+// **** Écriture de fichiers texte ****
+//  L’éditeur sera capable d’écrire sur disque les fichiers modifiés.
+//  Classes Qt utiles : QFile, QFileDialog
+//  l’édition d’un fichier modifié et non encore sauvegardé devra être signalé par
+//  exemple par adjonction dans son nom d’un caractère *.
+//  L’éditeur devra demander en cas de fermeture d’un fichier modifié si l’utilisateur
+//  souhaite en faire sauvegarde ou abandonner les modifications
+
+
+// **** Affichage de la ligne et de la colonne du curseur ****
+// L’éditeur devra affichier la ligne et la colonne du curseur
+// QTextCursor
+
+
+// **** Recherche d’un texte dans un fichier ouvert ****
+// L’éditeur devra être capable de permettre la recherche d’un texte dans un fichier
+// avec éventuellement les options majuscules, mots seulement.
+
+
+// **** Remplacement d’un texte dans un fichier ****
+// L’éditeur devra être capable de permettre le remplacement d’un texte dans un fichier.
+
+
+// **** Mémorisation des derniers fichiers ouverts ****
+// L’éditeur devra être capable d’afficher les dix derniers fichiers ouverts.
+//   Classes Qt utiles : QSettings
+

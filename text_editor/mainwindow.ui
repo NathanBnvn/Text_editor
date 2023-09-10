@@ -69,7 +69,7 @@
     <string>Ouvrir un fichier</string>
    </property>
    <property name="shortcut">
-    <string>Shift+O</string>
+    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>
