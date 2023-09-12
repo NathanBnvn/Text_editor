@@ -5,7 +5,6 @@
 
 #include <QMainWindow>
 #include <QString>
-#include <map>
 #include <iostream>
 
 QT_BEGIN_NAMESPACE
@@ -24,20 +23,19 @@ public:
     QString filePath;
     QString fileName;
     QLabel * labelCursor;
-    std::map<int, QString> initialContents;
 
     void readFile();
     QString pathToNameFile();
-
 
 private:
     Ui::MainWindow *ui;
 
 private slots:
     void selectFile();
+    void hasBeenEdited(bool edited);
     void closeTab(int id);
-    void cursorChanged();
     void tabChanged(int id);
-    void hasBeenEdited(bool b);
+    void showSearch(bool show);
+    void showSwap(bool show);
 };
 #endif // MAINWINDOW_H

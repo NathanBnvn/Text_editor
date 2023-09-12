@@ -22,12 +22,18 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("Textus Editor");
     ui->tabWidget->removeTab(1);
     ui->tabWidget->setTabsClosable(true);
-
-    // QTextEdit* edit = qobject_cast<QTextEdit*>(tabWidget->widget(index));
+    ui->searchFrame->hide();
+    ui->swapFrame->hide();
 
     connect (ui->actionOpenFile, SIGNAL(triggered(bool)), this, SLOT(selectFile()));
+    connect (ui->actionSearch, SIGNAL(triggered(bool)), this, SLOT(showSearch(bool)));
+    connect (ui->actionSwap, SIGNAL(triggered(bool)), this, SLOT(showSwap(bool)));
     connect (ui->tabWidget->tabBar(), SIGNAL(tabBarClicked(int)), this, SLOT(tabChanged(int)));
     connect (ui->tabWidget, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
+
+    if(ui->tabWidget->currentIndex() == 0){
+        connect (ui->textContainer, SIGNAL(textHasChanged(bool)), this, SLOT(hasBeenEdited(bool)));
+    }
 
 }
 
@@ -74,9 +80,6 @@ void MainWindow::readFile()
         textContainer->append(line);
     }
     textContainer->initialContent = textContainer->toPlainText();
-
-    connect (ui->textContainer, SIGNAL(textHasChanged(bool)), this, SLOT(hasBeenEdited(bool)));
-    connect (ui->textContainer, SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
 }
 
 
@@ -88,8 +91,6 @@ void MainWindow::closeTab(int id)
     messageBox.setInformativeText(QString("Souhaitez-vous sauvegarder les modifications ?"));
     messageBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
     messageBox.setDefaultButton(QMessageBox::Save);
-
-    qDebug() << textContainer->textChanged;
 
     if(textContainer->textChanged){
         int choice = messageBox.exec();
@@ -131,8 +132,8 @@ void MainWindow::hasBeenEdited(bool edited)
                                       ui->tabWidget->tabText(ui->tabWidget->currentIndex()) +" *");
         textContainer->textChanged = true;
     } else {
-        QString x = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).remove(" *");
-        ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), x);
+        QString tabName = ui->tabWidget->tabText(ui->tabWidget->currentIndex()).remove(" *");
+        ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), tabName);
         textContainer->textChanged = false;
     }
 }
@@ -147,19 +148,30 @@ QString MainWindow::pathToNameFile()
         fs::path(filePath.toStdString()).filename().generic_string());
 }
 
-void MainWindow::cursorChanged()
-{
-    ui->labelCursor->setText(QString("Ligne: " + QString::number(textContainer->cursorRow) +
-                                     ", Colonne: " + QString::number(textContainer->cursorColumn)));
-
-}
-
+// optimisation posible
 void MainWindow::tabChanged(int id){
     if(id > 0){
         connect (ui->tabWidget->widget(id), SIGNAL(textHasChanged(bool)), this, SLOT(hasBeenEdited(bool)));
-        connect (ui->tabWidget->widget(id), SIGNAL(cursorPositionChanged()), this, SLOT(cursorChanged()));
     }
 
+}
+
+void MainWindow::showSearch(bool show){
+    if(show){
+        ui->searchFrame->show();
+    }else{
+        ui->searchFrame->hide();
+    }
+}
+
+void MainWindow::showSwap(bool show){
+    if(show){
+        ui->searchFrame->show();
+        ui->swapFrame->show();
+    } else {
+        ui->searchFrame->hide();
+        ui->swapFrame->hide();
+    }
 }
 
 

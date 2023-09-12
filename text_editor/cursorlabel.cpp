@@ -1,7 +1,6 @@
 #include "cursorlabel.h"
 
+CursorLabel::CursorLabel()
+{
 
-//CursorLabel::CursorLabel(CQTextEdit *editor)
-//{
-
-//}
+}

@@ -2,17 +2,11 @@
 #define CURSORLABEL_H
 
 #include <QLabel>
-#include "cqtextedit.h"
 
 class CursorLabel : public QLabel
 {
-
 public:
-    CursorLabel(CQTextEdit *editor);
-
-private:
-    //CQTextEdit * textusEditor;
-
+    CursorLabel();
 };
 
 #endif // CURSORLABEL_H

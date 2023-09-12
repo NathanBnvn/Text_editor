@@ -10,14 +10,12 @@ CONFIG += c++17
 
 SOURCES += \
     cqtextedit.cpp \
-    cursorlabel.cpp \
     linecounter.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
     cqtextedit.h \
-    cursorlabel.h \
     linecounter.h \
     mainwindow.h
 

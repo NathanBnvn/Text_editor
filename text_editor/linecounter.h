@@ -9,16 +9,16 @@ class LineCounter : public QWidget
     Q_OBJECT
 
 public:
-    //LineCounter(CQTextEdit * editor);
-    //QSize sizeHint() const override;
+    LineCounter(CQTextEdit * textusEditor);
+    QSize sizeHint() const override;
 
 signals:
 
 protected:
-    //void paintEvent(QPaintEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
 
 private:
-    //CQTextEdit * textusEditor;
+    CQTextEdit * textusEditor;
 };
 
 #endif // LINECOUNTER_H

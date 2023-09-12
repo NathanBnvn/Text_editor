@@ -15,37 +15,36 @@ class CQTextEdit : public QTextEdit
 public:
     CQTextEdit(QWidget *parent = nullptr);
 
-    QString initialContent;
-    int cursorColumn;
-    int cursorRow;
     bool textChanged;
+    QString initialContent;
 
-    //void lineCountPaintEvent(QPaintEvent *event);
-    //int lineCounterWidth();
+    int cursorRow;
+    int cursorColumn;
+    int cursorLabelHeight;
 
-    //il faut faire un mytextedit dans lequel tu ajoutes l'envoi du signal et un connect avec un slot
-    // qui vérifie chaque fois que text esdit est changé si ce'est le mme
-    // et après avoir collé le mytextedit tu poses un connect
-    //avec un slot charger de mettre une étoile ou de ne pas la mettre
+    int getFirstVisibleBlockId();
+    int lineCounterWidth();
+    void lineCountPaintEvent(QPaintEvent *event);
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
+private:
+    QWidget * lineCounter;
+    QLabel * cursorLabel;
 
 signals:
     void textHasChanged(bool);
 
-protected:
-    //void resizeEvent(QResizeEvent *event) override;
-
-private:
-    //QWidget *lineCounter;
-    //QLabel *cursorLabel;
-
 public slots:
+
 
 
 private slots:
     void hasBeenEdited();
     void cursorChanged();
-    //void updateLineCounterWidth(int newLineCount);
-    //void updateLineCounter(const QRect &rect, int y);
+    void updateLineCounter();
+    void updateLineCounterWidth(int newLineCount);
 };
 
 
